@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy Day 💐</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #fff0f6;
+      text-align: center;
+      overflow-x: hidden;
+    }
+    .container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 40px auto;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+      background: #fff;
+    }
+    #backgroundImage {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .instax {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 250px;
+      transform: translate(-50%, -50%) rotate(-5deg);
+      border: 10px solid white;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      border-radius: 8px;
+    }
+    .btn {
+      display: inline-block;
+      margin: 10px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      background-color: #ff8fab;
+      color: white;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .btn:hover {
+      background-color: #ff5d8f;
+    }
+    .message {
+      font-size: 20px;
+      font-weight: 500;
+      color: #ff3d7f;
+      margin: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img id="backgroundImage" src="" alt="Background" />
+    <img id="mainPhoto" class="instax" src="" alt="Main Photo" />
+  </div>
+
+  <div id="uploadSection">
+    <input type="file" id="bgUpload" accept="image/*" hidden />
+    <input type="file" id="photoUpload" accept="image/*" hidden />
+    <button class="btn" id="chooseBgBtn">Chọn ảnh nền</button>
+    <button class="btn" id="choosePhotoBtn">Chọn ảnh chính</button>
+  </div>
+
+  <div class="message">💖 Happy Women's Day & Birthday 💖</div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCwPw2q1Fk1tcqlJAoa6RVJmSbD2FKFuGw",
+      authDomain: "secret-gift-c6204.firebaseapp.com",
+      projectId: "secret-gift-c6204",
+      storageBucket: "secret-gift-c6204.appspot.com",
+      messagingSenderId: "92752943099",
+      appId: "1:92752943099:web:a87ebec21b78f6de271d5e",
+      measurementId: "G-70YL0TP57W"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const docRef = doc(db, "gift", "config");
+
+    const backgroundImage = document.getElementById("backgroundImage");
+    const mainPhoto = document.getElementById("mainPhoto");
+    const chooseBgBtn = document.getElementById("chooseBgBtn");
+    const choosePhotoBtn = document.getElementById("choosePhotoBtn");
+    const bgUpload = document.getElementById("bgUpload");
+    const photoUpload = document.getElementById("photoUpload");
+    const uploadSection = document.getElementById("uploadSection");
+
+    async function loadConfig() {
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.isLocked) {
+          backgroundImage.src = data.backgroundUrl;
+          mainPhoto.src = data.photoUrl;
+          uploadSection.style.display = "none";
+        }
+      }
+    }
+
+    loadConfig();
+
+    chooseBgBtn.addEventListener("click", () => bgUpload.click());
+    choosePhotoBtn.addEventListener("click", () => photoUpload.click());
+
+    bgUpload.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const fileRef = ref(storage, "background.jpg");
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+        backgroundImage.src = url;
+        await setDoc(docRef, { backgroundUrl: url }, { merge: true });
+      }
+    });
+
+    photoUpload.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const fileRef = ref(storage, "photo.jpg");
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+        mainPhoto.src = url;
+        await setDoc(docRef, { photoUrl: url }, { merge: true });
+
+        // Lock sau khi đã chọn đủ ảnh
+        const snap = await getDoc(docRef);
+        const data = snap.data();
+        if (data.backgroundUrl && data.photoUrl) {
+          await setDoc(docRef, { isLocked: true }, { merge: true });
+          uploadSection.style.display = "none";
+        }
+      }
+    });
+  </script>
+</body>
+</html>
